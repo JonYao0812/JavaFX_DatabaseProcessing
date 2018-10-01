@@ -105,7 +105,7 @@ public class GradeProcessing extends Application{
         Button clearResult = new Button("Clear");
       //Create content for combobox  
         ObservableList<String> options = FXCollections.observableArrayList(
-        "ID","Name","Quiz","A1","A2","A3","Exam","Grade");
+        "ID","Name","Quiz","A1","A2","A3","Exam","Grade","All");
         ComboBox searchList = new ComboBox(options);
         searchList.setItems(options);
       //Set default status for combobox  
@@ -156,9 +156,6 @@ public class GradeProcessing extends Application{
         });
      //Update button event handler   
         updateBtn.setOnAction(e ->{
-          //First check if input is valid  
-            boolean scoreRange = getInputcorrect(quiz,a1,a2,a3,exam);
-            if (scoreRange){
               //Check whether ID exist in database  
                 boolean searchID = idExist(stu_id.getText());
                 if (searchID){
@@ -171,16 +168,12 @@ public class GradeProcessing extends Application{
                     }
                   //Inform user if update fails  
                     else{
-                        AlertMessage("Query has issue.",false);
+                        AlertMessage("Input is incorrect.",false);
                     }
                 }
                 else{
                     AlertMessage("This ID does not exisit!", false);
                 }
-            } 
-            else{
-                AlertMessage("Scores must be between 0 and 100.", true);
-            }
         });
       //Search button event handler  
         searchBtn.setOnAction(e ->{
@@ -221,6 +214,10 @@ public class GradeProcessing extends Application{
                     list = DBsearch(9,searchText.getText());
                     break;
                 }
+                case("All"):{
+                    list = DBsearch(0,"");
+                    break;
+                }
             }
             if (list.size()<=1){
                 AlertMessage("Record does not found in database!",true);
@@ -228,7 +225,7 @@ public class GradeProcessing extends Application{
          //Display records in the pane if records found in database   
             else{
                 GridPane display = new GridPane();
-                display.setHgap(10);
+                display.setHgap(13);
                 String[] dataList = {};
                 int row = 0;
           // Transer data into grid pane     
@@ -264,13 +261,12 @@ public class GradeProcessing extends Application{
         Scene scene = new Scene(backPane);
         primaryStage.setScene(scene);
         primaryStage.show();
-      //Notification of creating table  
+     //Notification of creating table  
         Alert tableCreate = new Alert(Alert.AlertType.INFORMATION);
         tableCreate.setTitle("Database notification");
         tableCreate.setHeaderText(null);
         tableCreate.setContentText("Table for storing student records has already been created!");
         tableCreate.show();
-        
     }
   //Method to check if input in valid
     public boolean checkID(TextField id,TextField name,TextField quiz,TextField a1, TextField a2,TextField a3,TextField exam){
@@ -407,43 +403,48 @@ public class GradeProcessing extends Application{
             ResultSet rs=stmt.getResultSet();
           //Parameter to define which column is used to search records
             switch(column){
+                case(0):{
+                    String query = "SELECT * FROM Java2 ORDER BY stu_id ASC;";
+                    rs =stmt.executeQuery(query);
+                    break;
+                }
                 case(1):{
-                    String query = "SELECT * FROM Java2 WHERE stu_id = '"+value+"';";
+                    String query = "SELECT * FROM Java2 WHERE stu_id = '"+value+"' ORDER BY stu_id ASC;";
                      rs =stmt.executeQuery(query);
                     break;
                 }
                 case(2):{
-                    String query = "SELECT * FROM Java2 WHERE stu_name = '"+value+"';";
+                    String query = "SELECT * FROM Java2 WHERE stu_name = '"+value+"' ORDER BY stu_id ASC;";
                      rs =stmt.executeQuery(query);
                     break;
                 }
                 case(3):{
-                    String query = "SELECT * FROM Java2 WHERE score_quiz = '"+value+"';";
+                    String query = "SELECT * FROM Java2 WHERE score_quiz = '"+value+"' ORDER BY stu_id ASC;";
                      rs =stmt.executeQuery(query);
                     break;
                 }
                 case(4):{
-                    String query = "SELECT * FROM Java2 WHERE score_a1 = '"+value+"';";
+                    String query = "SELECT * FROM Java2 WHERE score_a1 = '"+value+"' ORDER BY stu_id ASC;";
                      rs =stmt.executeQuery(query);
                     break;
                 }
                 case(5):{
-                    String query = "SELECT * FROM Java2 WHERE score_a2 = '"+value+"';";
+                    String query = "SELECT * FROM Java2 WHERE score_a2 = '"+value+"' ORDER BY stu_id ASC;";
                      rs =stmt.executeQuery(query);
                     break;
                 }
                 case(6):{
-                    String query = "SELECT * FROM Java2 WHERE score_a3 = '"+value+"';";
+                    String query = "SELECT * FROM Java2 WHERE score_a3 = '"+value+"' ORDER BY stu_id ASC;";
                      rs =stmt.executeQuery(query);
                     break;
                 }
                 case(7):{
-                    String query = "SELECT * FROM Java2 WHERE score_exam = '"+value+"';";
+                    String query = "SELECT * FROM Java2 WHERE score_exam = '"+value+"' ORDER BY stu_id ASC;";
                      rs =stmt.executeQuery(query);
                     break;
                 }
                 case(9):{
-                    String query = "SELECT * FROM Java2 WHERE stu_grade = '"+value+"';";
+                    String query = "SELECT * FROM Java2 WHERE stu_grade = '"+value+"' ORDER BY stu_id ASC;";
                      rs =stmt.executeQuery(query);
                     break;
                 }
@@ -591,23 +592,23 @@ public class GradeProcessing extends Application{
             if(quizC>=0 && quizC<=100)
                 inputCorrect +=1;
         }
-        if(quiz.getText().matches("[0-9]+")){
+        if(a1.getText().matches("[0-9]+")){
             a1C = Integer.parseInt(quiz.getText());
             if(a1C>=0 && a1C <=100 )
                 inputCorrect +=1;
         }
-        if(quiz.getText().matches("[0-9]+")){
+        if(a2.getText().matches("[0-9]+")){
             a2C = Integer.parseInt(quiz.getText().toString());
             if(a2C>=0 && a2C <=100 )
                 inputCorrect +=1;
         }
-        if(quiz.getText().matches("[0-9]+")){
+        if(a3.getText().matches("[0-9]+")){
             a3C = Integer.parseInt(quiz.getText().toString());
             if(a3C>=0 && a3C <=100 )
                 inputCorrect +=1;
         }
         
-        if(quiz.getText().matches("[0-9]+")){
+        if(exam.getText().matches("[0-9]+")){
             examC = Integer.parseInt(quiz.getText().toString());
             if(examC>=0 && examC <=100 )
                 inputCorrect +=1;
@@ -617,5 +618,4 @@ public class GradeProcessing extends Application{
         else
             return false;
     }
-    
 }
