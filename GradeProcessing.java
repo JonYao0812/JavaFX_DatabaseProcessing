@@ -10,6 +10,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.application.Application;
 import static javafx.application.Application.launch;
 import javafx.collections.FXCollections;
@@ -35,9 +37,8 @@ import javafx.stage.Stage;
 public class GradeProcessing extends Application{
     private boolean btnPressed;
     
-    public void start(Stage primaryStage){  
+    public void start(Stage primaryStage){ 
         BorderPane backPane = new BorderPane();
-        
        //Create pane for all text fields layouts
         GridPane textPane = new GridPane();
         textPane.setHgap(5);
@@ -122,11 +123,18 @@ public class GradeProcessing extends Application{
         
       //Calculation button function  
         calBtn.setOnAction(e -> {
-          //Get result and grade from calculation method and set texts  
-            double stu_result = calculation(quiz.getText(),a1.getText(),a2.getText(),a3.getText(),exam.getText());
-            String stu_grade = getGrade(stu_result);
-            results.setText(String.valueOf(stu_result));
-            grade.setText(stu_grade);
+          //check whether inputs are in correct format  
+            boolean inputCheck = getInputcorrect( quiz, a1,  a2, a3, exam) ;     
+            if(inputCheck){    
+              //Get result and grade from calculation method and set texts    
+                double stu_result = calculation(quiz.getText(),a1.getText(),a2.getText(),a3.getText(),exam.getText());
+                String stu_grade = getGrade(stu_result);
+                results.setText(String.valueOf(stu_result));
+                grade.setText(stu_grade);
+            }
+            else{
+                AlertMessage("Input format is incorrect!",true);
+            }
         });
       //insert button funciton  
         insertBtn.setOnAction(e ->{
@@ -256,6 +264,13 @@ public class GradeProcessing extends Application{
         Scene scene = new Scene(backPane);
         primaryStage.setScene(scene);
         primaryStage.show();
+      //Notification of creating table  
+        Alert tableCreate = new Alert(Alert.AlertType.INFORMATION);
+        tableCreate.setTitle("Database notification");
+        tableCreate.setHeaderText(null);
+        tableCreate.setContentText("Table for storing student records has already been created!");
+        tableCreate.show();
+        
     }
   //Method to check if input in valid
     public boolean checkID(TextField id,TextField name,TextField quiz,TextField a1, TextField a2,TextField a3,TextField exam){
@@ -340,61 +355,57 @@ public class GradeProcessing extends Application{
                 attribute[i] = rs.getString(i+1);
             }
             
-           
+          //If name texField has input, store the value in attribute array 
             if (!name.getText().equals("")){
                 attribute[1] = name.getText();
-                //calculation( quiz, a1, a2, a3,  exam);
             }
+           //If quiz texField has input, store the value in attribute array  
             if (!quiz.getText().equals("")){
                 attribute[2] = quiz.getText();
-             //   String query = "UPDATE Java2 SET score_quiz = '"+attribute[2]+"' WHERE stu_id = '"+ id.getText().toString()+"';";
-            //int urss = stmt.executeUpdate(query);
-            //System.out.println(urss);
-                //calculation( quiz, a1, a2, a3,  exam);
             }
+          //If A1 texField has input, store the value in attribute array
             if (!a1.getText().equals("")){
                 attribute[3] = a1.getText();
-               // calculation( quiz, a1, a2, a3,  exam);
             }
+          //If A2 texField has input, store the value in attribute array
             if (!a2.getText().equals("")){
                 attribute[4] = a2.getText();
-               // calculation( quiz, a1, a2, a3,  exam);
             }
+           //If A3 texField has input, store the value in attribute array  
             if (!a3.getText().equals("")){
                 attribute[5] = a3.getText();
-                //calculation( quiz, a1, a2, a3,  exam);
             }
+           //If exam texField has input, store the value in attribute array  
             if (!exam.getText().equals("")){
                 attribute[6] = exam.getText();
             }
+          //Calculate results and grade   
             double resultUpdated = calculation(attribute[2],attribute[3],attribute[4],attribute[5],attribute[6]);
             String gradeUpdated = getGrade(resultUpdated);
-            
+          //Set query string  
             String query = "UPDATE Java2 SET stu_name = '"+attribute[1]+"', score_quiz = "+Integer.parseInt(attribute[2])+", score_a1 = "+Integer.parseInt(attribute[3])+", score_a2 = "
                     + Integer.parseInt(attribute[4])+", score_a3 = "+Integer.parseInt(attribute[5])+", score_exam = "+Integer.parseInt(attribute[6])+", result = '"+resultUpdated+"', stu_grade = '"+gradeUpdated
                     +"' WHERE stu_id = '"+ id.getText().toString()+"';";
             int urs = stmt.executeUpdate(query);
-          //System.out.println(urs);
             con.close();  
+          //If return larger than 0, there's at least one record is updated  
             if (urs>0){
                 dbUpdate = true;
             }
-            
         }
         catch(Exception e){ System.out.println(e);}  
         return dbUpdate;
     } 
-     
+   //Database search method  
     protected ArrayList DBsearch(int column, String value){
             ArrayList<String> searchResult = new ArrayList();
-            
             try{  
             Class.forName("com.mysql.jdbc.Driver");  
             Connection con=DriverManager.getConnection(  
             "jdbc:mysql://localhost:3306/GradeProcessing","root","sam11001"); 
             Statement stmt=con.createStatement();
             ResultSet rs=stmt.getResultSet();
-            
+          //Parameter to define which column is used to search records
             switch(column){
                 case(1):{
                     String query = "SELECT * FROM Java2 WHERE stu_id = '"+value+"';";
@@ -437,6 +448,7 @@ public class GradeProcessing extends Application{
                     break;
                 }
             }
+          //Store records into ArrayList  
             searchResult.add(String.format("%s %s %s %s %s %s %s %s %s","ID","Name","Quiz",
                     "A1","A2","A3","Exam","Result","Grade"));
             while(rs.next()){
@@ -451,7 +463,7 @@ public class GradeProcessing extends Application{
             return searchResult;
         }
     }
-    
+  // Method to check whether ID exist in database
     protected boolean idExist(String id){
         boolean inputIDexist = false;
         if (!id.equals("")){
@@ -459,21 +471,16 @@ public class GradeProcessing extends Application{
             Class.forName("com.mysql.jdbc.Driver");  
             Connection con=DriverManager.getConnection(  
             "jdbc:mysql://localhost:3306/GradeProcessing","root","sam11001");
-          
             Statement stmt=con.createStatement();
             ResultSet rs = stmt.executeQuery("SELECT * FROM Java2 WHERE stu_id = '"+id+"';");
-            
             rs.next();
             if(rs.getString(1).contains(id)){
                 inputIDexist = true;
             }
             else{
                 inputIDexist = false;
-                
             }
             con.close();
-            
-            
         }catch(Exception e)
         { System.out.println(e);} 
         finally{
@@ -484,7 +491,7 @@ public class GradeProcessing extends Application{
             return inputIDexist;
     }
     
-    
+   //Clear method to clean all textFields 
     protected void clear(TextField id,TextField name,TextField quiz,TextField a1,TextField a2,TextField a3, TextField exam, Label result,Label grade){
         id.clear();
         name.clear();
@@ -496,27 +503,25 @@ public class GradeProcessing extends Application{
         result.setText("0.00");
         grade.setText("N/A");
     }
-        
+  //Method to display alert messages      
     protected void AlertMessage(String msg,boolean errorType){
         
         Alert errorAlert = new Alert(Alert.AlertType.INFORMATION);
+      //Set title with 2 major categories  
         if (errorType){
             errorAlert.setTitle("Input error");
-            
         }
         else{
             errorAlert.setTitle("Databse update error");
         }
-        
+      //SEt messages and header  
         errorAlert.setHeaderText(null);
         errorAlert.setContentText(msg);
         errorAlert.showAndWait();
-        
     }
-    
+  //Method to calculate results   
     protected double calculation(String quiz,String a1,String a2,String a3, String exam){
         int inputQuiz,inputA1,inputA2,inputA3,inputExam;
-                
         if (quiz.equals("")){
             inputQuiz = 0;
         }
@@ -547,16 +552,12 @@ public class GradeProcessing extends Application{
         else{
             inputExam=Integer.parseInt(exam);
         }
-        
+      //Calculate results  
         double results = (inputQuiz*0.05)+(inputA1*0.15)+(inputA2*0.2)+(inputA3*0.1)+(inputExam*0.5);
-        //double results = (Integer.parseInt(quiz.getText())*0.05)+ (Integer.parseInt(a1.getText())*0.15)
-             //   + (Integer.parseInt(a2.getText())*0.2) + (Integer.parseInt(a3.getText())*0.1)
-             //       +(Integer.parseInt(a1.getText().toString())*0.5);
         return results;
     }
-    
+  //Method to get grade to mathcing result range  
     protected String getGrade(double results){
-        
         String grade;
             if (results >= 85){
                 grade = "HD";
@@ -573,11 +574,9 @@ public class GradeProcessing extends Application{
             else  {
                 grade = "FL";
             }
-            
             return(grade);
-        
     }
-    
+  //Method to check if inputs are in correct range  
     protected boolean getInputcorrect(TextField quiz,TextField a1, TextField a2,TextField a3,TextField exam){
         int inputCorrect =0;
         int quizC = 0;
@@ -586,52 +585,37 @@ public class GradeProcessing extends Application{
         int a3C = 0;
         int examC = 0;
         
+      //Check all textFields if input matches correct format  
         if(quiz.getText().matches("[0-9]+")){
             quizC = Integer.parseInt(quiz.getText());
             if(quizC>=0 && quizC<=100)
                 inputCorrect +=1;
         }
-        else
-            inputCorrect +=1;
-            
-        
         if(quiz.getText().matches("[0-9]+")){
             a1C = Integer.parseInt(quiz.getText());
             if(a1C>=0 && a1C <=100 )
                 inputCorrect +=1;
         }
-        else
-            inputCorrect +=1;
-        
         if(quiz.getText().matches("[0-9]+")){
             a2C = Integer.parseInt(quiz.getText().toString());
             if(a2C>=0 && a2C <=100 )
                 inputCorrect +=1;
         }
-        else
-            inputCorrect +=1;
-        
         if(quiz.getText().matches("[0-9]+")){
             a3C = Integer.parseInt(quiz.getText().toString());
             if(a3C>=0 && a3C <=100 )
                 inputCorrect +=1;
         }
-        else
-            inputCorrect +=1;
         
         if(quiz.getText().matches("[0-9]+")){
             examC = Integer.parseInt(quiz.getText().toString());
             if(examC>=0 && examC <=100 )
                 inputCorrect +=1;
         }
-        else
-            inputCorrect +=1;
-        
         if (inputCorrect == 5)
             return true;
         else
             return false;
     }
-        
     
 }
