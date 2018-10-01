@@ -146,17 +146,22 @@ public class GradeProcessing extends Application{
                 AlertMessage("Scores must be between 0 and 100.", true);
             }
         });
-        
+     //Update button event handler   
         updateBtn.setOnAction(e ->{
+          //First check if input is valid  
             boolean scoreRange = getInputcorrect(quiz,a1,a2,a3,exam);
             if (scoreRange){
+              //Check whether ID exist in database  
                 boolean searchID = idExist(stu_id.getText());
                 if (searchID){
+                 //Update record in database with DBupdate method 
                     boolean updated = DBupdate(stu_id,stu_name,quiz,a1,a2,a3,exam,results,grade);
+                  //Clear all textFields and pop message to inform user  
                     if (updated){
                         clear(stu_id,stu_name,quiz,a1,a2,a3,exam,results,grade);
                         AlertMessage("Record updated.",false);
                     }
+                  //Inform user if update fails  
                     else{
                         AlertMessage("Query has issue.",false);
                     }
@@ -169,10 +174,12 @@ public class GradeProcessing extends Application{
                 AlertMessage("Scores must be between 0 and 100.", true);
             }
         });
-        
+      //Search button event handler  
         searchBtn.setOnAction(e ->{
             ArrayList<String> list = new ArrayList();
+          //Retrive value from combobox   
             String selected = searchList.getValue().toString();
+          //Retrive records from database based on selected item in combobox  
             switch (selected){
                 case("ID"):{
                     list = DBsearch(1,searchText.getText());
@@ -210,100 +217,90 @@ public class GradeProcessing extends Application{
             if (list.size()<=1){
                 AlertMessage("Record does not found in database!",true);
             }
+         //Display records in the pane if records found in database   
             else{
-                
                 GridPane display = new GridPane();
                 display.setHgap(10);
                 String[] dataList = {};
-                int column = 0;
-                
+                int row = 0;
+          // Transer data into grid pane     
             for (String content : list){
                 dataList = content.split(" ");
-                System.out.println(dataList[0]+dataList[1]);
-                
-                display.add(new Label(dataList[0]),0,column);
-                display.add(new Label(dataList[1]),1,column);
-                display.add(new Label(dataList[2]),2,column);
-                display.add(new Label(dataList[3]),3,column);
-                display.add(new Label(dataList[4]),4,column);
-                display.add(new Label(dataList[5]),5,column);
-                display.add(new Label(dataList[6]),6,column);
-                display.add(new Label(dataList[7]),7,column);
-                display.add(new Label(dataList[8]),8,column);
-                column++;
+                display.add(new Label(dataList[0]),0,row);
+                display.add(new Label(dataList[1]),1,row);
+                display.add(new Label(dataList[2]),2,row);
+                display.add(new Label(dataList[3]),3,row);
+                display.add(new Label(dataList[4]),4,row);
+                display.add(new Label(dataList[5]),5,row);
+                display.add(new Label(dataList[6]),6,row);
+                display.add(new Label(dataList[7]),7,row);
+                display.add(new Label(dataList[8]),8,row);
+                row++;
             }
-           
+          //Set scroll pane content by the gridpane node 
             sp.setContent(display);
             }
         });
-        
+      //Clear button on search side to clear all search textFields  
         clearResult.setOnAction(e ->{
-            
             searchText.clear();
             sp.setContent(new Label(""));
-          
-        
         });
-        
+      //Clear button on input side to clear all textFields  
         clearBtn.setOnAction(e->{
             clear(stu_id,stu_name,quiz,a1,a2,a3,exam,results,grade);
         });
-        
-        
-        
-       
+     //Set all panes into main boarder pane and scene and stage  
         backPane.setLeft(textPane);
-        //backPane.setBottom(btnBox);
         backPane.setRight(searchBox);
         Scene scene = new Scene(backPane);
         primaryStage.setScene(scene);
         primaryStage.show();
-        
-        
     }
+  //Method to check if input in valid
     public boolean checkID(TextField id,TextField name,TextField quiz,TextField a1, TextField a2,TextField a3,TextField exam){
         boolean insertCheck = false;
-        
+       //Check if all textFields are entered  
         if (id.getText().length() == 0 || name.getText().length() ==0 || quiz.getText().length()==0 ||
                 a1.getText().length()==0 || a2.getText().length()== 0 || a3.getText().length()==0 || exam.getText().length()==0){
                 AlertMessage("All columns must be entered!",true);
             }
-               
         else {
+            //Check if ID contain 8 digital number
                 if (id.getText().length() != 8){
                     AlertMessage("ID must be 8 digit numbers",true);
                 }
                 else{
+                  //Check if ID exist in databse  
                     boolean checkId = idExist(id.getText().toString());
                     if (checkId){
                       AlertMessage("ID exist",false);
                     }
+                  //If not exist, insert record into databse with DBinsert method.  
                     else{
                         insertCheck = DBinsert(id,name,quiz,a1,a2,a3,exam);
                         }
                 }
             }
-        
-        return insertCheck;
-        
+        return insertCheck;  //Return the value whether record is successfully inserted
     }
     
    
     public static void main(String[] args) {
         launch(args);
     }
-    
+  // DBinsert method  
     protected boolean DBinsert(TextField id,TextField name,TextField quiz,TextField a1,TextField a2,TextField a3, TextField exam){
-        
         boolean inserted = false;
         try{  
+           //Open connection to database 
             Class.forName("com.mysql.jdbc.Driver");  
             Connection con=DriverManager.getConnection(  
             "jdbc:mysql://localhost:3306/GradeProcessing","root","sam11001");
-            
+           //Calculate results and grade 
             double results = calculation( quiz.getText().toString(), a1.getText().toString(), a2.getText().toString(), a3.getText().toString(), exam.getText().toString());
             String grade = getGrade(results);
-            
+          //Create query statement  
             Statement stmt=con.createStatement();
             String query = "INSERT INTO Java2 (stu_id,stu_name, score_quiz, score_a1, score_a2 , "
                     + "score_a3 , score_exam , result , stu_grade) VALUE ("
@@ -311,35 +308,34 @@ public class GradeProcessing extends Application{
                     + ","+Integer.parseInt(a1.getText().toString())+ ","+Integer.parseInt(a2.getText().toString())
                     + ","+Integer.parseInt(a3.getText().toString())+ ","+Integer.parseInt(exam.getText().toString())
                     +","+String.format("%3.2f",results)+",'"+grade+"')";
-            int rs = stmt.executeUpdate(query);  
-            
+           //Get value whether insert is successful 
+            int rs = stmt.executeUpdate(query); 
             if (rs>0){
                 inserted = true;
-                
             }
             else{
                 AlertMessage("Something's wrong!",false);
             }
             con.close(); 
-            
         }catch(Exception e)
         { System.out.println(e);} 
         finally{
             return inserted;
         }
     }
-
+//DBupdate method
     protected boolean DBupdate(TextField id,TextField name,TextField quiz,TextField a1,TextField a2,TextField a3, TextField exam,Label results,Label grade){
         boolean dbUpdate = false;
         try{  
             Class.forName("com.mysql.jdbc.Driver");  
             Connection con=DriverManager.getConnection(  
             "jdbc:mysql://localhost:3306/GradeProcessing","root","sam11001");  
-//here sonoo is database name, root is username and password  
             Statement stmt=con.createStatement();  
+          //Get resultSet from database  
             ResultSet rs = stmt.executeQuery("SELECT * FROM Java2 WHERE stu_id = '"+id.getText().toString()+"';");
             rs.next();
             String[] attribute = new String[10];
+          //Store attributes into String array  
             for(int i=0;i<9;i++){
                 attribute[i] = rs.getString(i+1);
             }
@@ -378,7 +374,7 @@ public class GradeProcessing extends Application{
                     + Integer.parseInt(attribute[4])+", score_a3 = "+Integer.parseInt(attribute[5])+", score_exam = "+Integer.parseInt(attribute[6])+", result = '"+resultUpdated+"', stu_grade = '"+gradeUpdated
                     +"' WHERE stu_id = '"+ id.getText().toString()+"';";
             int urs = stmt.executeUpdate(query);
-            //System.out.println(urs);
+          //System.out.println(urs);
             con.close();  
             if (urs>0){
                 dbUpdate = true;
